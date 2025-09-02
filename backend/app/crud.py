@@ -6,10 +6,12 @@ from sqlmodel import Session, select
 from app.core.security import get_password_hash, verify_password
 from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
 
+from backend.app.utils import logger
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
+    logger.info(f"Creating user {user_create.username}")
     db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
+        user_create, update={"ashed_password": get_password_hash(user_create.password)}
     )
     session.add(db_obj)
     session.commit()
