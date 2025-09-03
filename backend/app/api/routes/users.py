@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,6 +14,8 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    BulkUserDelete,
+    BulkUserUpdate,
     Item,
     Message,
     UpdatePassword,
@@ -20,6 +23,7 @@ from app.models import (
     UserCreate,
     UserPublic,
     UserRegister,
+    UserStats,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -46,6 +50,41 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     users = session.exec(statement).all()
 
     return UsersPublic(data=users, count=count)
+
+
+@router.get(
+    "/stats",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=UserStats,
+)
+def get_user_stats(session: SessionDep) -> Any:
+    """
+    Get user statistics.
+    """
+    total_users = session.exec(select(func.count()).select_from(User)).one()
+    active_users = session.exec(
+        select(func.count()).select_from(User).where(User.is_active == True)
+    ).one()
+    superusers = session.exec(
+        select(func.count()).select_from(User).where(User.is_superuser == True)
+    ).one()
+    inactive_users = session.exec(
+        select(func.count()).select_from(User).where(User.is_active == False)
+    ).one()
+    
+    # Users created this month
+    first_day_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    users_created_this_month = session.exec(
+        select(func.count()).select_from(User).where(User.created_at >= first_day_of_month)
+    ).one()
+
+    return UserStats(
+        total_users=total_users,
+        active_users=active_users,
+        superusers=superusers,
+        inactive_users=inactive_users,
+        users_created_this_month=users_created_this_month,
+    )
 
 
 @router.post(
@@ -224,3 +263,92 @@ def delete_user(
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
+
+
+@router.patch(
+    "/bulk/update",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=Message,
+)
+def bulk_update_users(
+    *, session: SessionDep, bulk_update: BulkUserUpdate
+) -> Any:
+    """
+    Bulk update users.
+    """
+    if not bulk_update.user_ids:
+        raise HTTPException(status_code=400, detail="No user IDs provided")
+    
+    update_data = {}
+    if bulk_update.is_active is not None:
+        update_data["is_active"] = bulk_update.is_active
+    if bulk_update.is_superuser is not None:
+        update_data["is_superuser"] = bulk_update.is_superuser
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    # Update users
+    for user_id in bulk_update.user_ids:
+        user = session.get(User, user_id)
+        if user:
+            user.sqlmodel_update(update_data)
+            session.add(user)
+    
+    session.commit()
+    return Message(message=f"Updated {len(bulk_update.user_ids)} users successfully")
+
+
+@router.delete(
+    "/bulk/delete",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=Message,
+)
+def bulk_delete_users(
+    *, session: SessionDep, current_user: CurrentUser, bulk_delete: BulkUserDelete
+) -> Any:
+    """
+    Bulk delete users.
+    """
+    if not bulk_delete.user_ids:
+        raise HTTPException(status_code=400, detail="No user IDs provided")
+    
+    if current_user.id in bulk_delete.user_ids:
+        raise HTTPException(
+            status_code=403, detail="Super users are not allowed to delete themselves"
+        )
+    
+    deleted_count = 0
+    for user_id in bulk_delete.user_ids:
+        user = session.get(User, user_id)
+        if user:
+            # Delete associated items first
+            statement = delete(Item).where(col(Item.owner_id) == user_id)
+            session.exec(statement)  # type: ignore
+            session.delete(user)
+            deleted_count += 1
+    
+    session.commit()
+    return Message(message=f"Deleted {deleted_count} users successfully")
+
+
+@router.patch(
+    "/{user_id}/toggle-status",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=UserPublic,
+)
+def toggle_user_status(
+    *, session: SessionDep, user_id: uuid.UUID
+) -> Any:
+    """
+    Toggle user active status.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = not user.is_active
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user

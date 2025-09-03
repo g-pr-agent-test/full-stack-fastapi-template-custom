@@ -499,3 +499,85 @@ export const ValidationErrorSchema = {
   required: ["loc", "msg", "type"],
   title: "ValidationError",
 } as const
+
+export const BulkUserUpdateSchema = {
+  properties: {
+    user_ids: {
+      items: {
+        type: "string",
+        format: "uuid",
+      },
+      type: "array",
+      title: "User Ids",
+    },
+    is_active: {
+      anyOf: [
+        {
+          type: "boolean",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Is Active",
+    },
+    is_superuser: {
+      anyOf: [
+        {
+          type: "boolean",
+        },
+        {
+          type: "null",
+        },
+      ],
+      title: "Is Superuser",
+    },
+  },
+  type: "object",
+  required: ["user_ids"],
+  title: "BulkUserUpdate",
+} as const
+
+export const BulkUserDeleteSchema = {
+  properties: {
+    user_ids: {
+      items: {
+        type: "string",
+        format: "uuid",
+      },
+      type: "array",
+      title: "User Ids",
+    },
+  },
+  type: "object",
+  required: ["user_ids"],
+  title: "BulkUserDelete",
+} as const
+
+export const UserStatsSchema = {
+  properties: {
+    total_users: {
+      type: "integer",
+      title: "Total Users",
+    },
+    active_users: {
+      type: "integer",
+      title: "Active Users",
+    },
+    superusers: {
+      type: "integer",
+      title: "Superusers",
+    },
+    inactive_users: {
+      type: "integer",
+      title: "Inactive Users",
+    },
+    users_created_this_month: {
+      type: "integer",
+      title: "Users Created This Month",
+    },
+  },
+  type: "object",
+  required: ["total_users", "active_users", "superusers", "inactive_users", "users_created_this_month"],
+  title: "UserStats",
+} as const

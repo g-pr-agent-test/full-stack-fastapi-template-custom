@@ -75,6 +75,8 @@ export type UserPublic = {
   is_superuser?: boolean
   full_name?: string | null
   id: string
+  created_at: string
+  last_login?: string | null
 }
 
 export type UserRegister = {
@@ -232,3 +234,43 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = Message
 
 export type UtilsHealthCheckResponse = boolean
+
+export type BulkUserUpdate = {
+  user_ids: Array<string>
+  is_active?: boolean | null
+  is_superuser?: boolean | null
+}
+
+export type BulkUserDelete = {
+  user_ids: Array<string>
+}
+
+export type UserStats = {
+  total_users: number
+  active_users: number
+  superusers: number
+  inactive_users: number
+  users_created_this_month: number
+}
+
+export type UsersGetUserStatsData = {}
+
+export type UsersGetUserStatsResponse = UserStats
+
+export type UsersBulkUpdateUsersData = {
+  requestBody: BulkUserUpdate
+}
+
+export type UsersBulkUpdateUsersResponse = Message
+
+export type UsersBulkDeleteUsersData = {
+  requestBody: BulkUserDelete
+}
+
+export type UsersBulkDeleteUsersResponse = Message
+
+export type UsersToggleUserStatusData = {
+  userId: string
+}
+
+export type UsersToggleUserStatusResponse = UserPublic

@@ -35,6 +35,13 @@ def login_access_token(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    
+    # Update last login time
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    session.add(user)
+    session.commit()
+    
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(

@@ -46,6 +46,14 @@ import type {
   UtilsTestEmailData,
   UtilsTestEmailResponse,
   UtilsHealthCheckResponse,
+  UsersGetUserStatsData,
+  UsersGetUserStatsResponse,
+  UsersBulkUpdateUsersData,
+  UsersBulkUpdateUsersResponse,
+  UsersBulkDeleteUsersData,
+  UsersBulkDeleteUsersResponse,
+  UsersToggleUserStatusData,
+  UsersToggleUserStatusResponse,
 } from "./types.gen"
 
 export class ItemsService {
@@ -501,6 +509,92 @@ export class UsersService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/users/{user_id}",
+      path: {
+        user_id: data.userId,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Get User Stats
+   * Get user statistics.
+   * @param data The data for the request.
+   * @returns UserStats Successful Response
+   * @throws ApiError
+   */
+  public static getUserStats(
+    data: UsersGetUserStatsData = {},
+  ): CancelablePromise<UsersGetUserStatsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/users/stats",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Bulk Update Users
+   * Bulk update users.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static bulkUpdateUsers(
+    data: UsersBulkUpdateUsersData,
+  ): CancelablePromise<UsersBulkUpdateUsersResponse> {
+    return __request(OpenAPI, {
+      method: "PATCH",
+      url: "/api/v1/users/bulk/update",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Bulk Delete Users
+   * Bulk delete users.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static bulkDeleteUsers(
+    data: UsersBulkDeleteUsersData,
+  ): CancelablePromise<UsersBulkDeleteUsersResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/users/bulk/delete",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Toggle User Status
+   * Toggle user active status.
+   * @param data The data for the request.
+   * @param data.userId
+   * @returns UserPublic Successful Response
+   * @throws ApiError
+   */
+  public static toggleUserStatus(
+    data: UsersToggleUserStatusData,
+  ): CancelablePromise<UsersToggleUserStatusResponse> {
+    return __request(OpenAPI, {
+      method: "PATCH",
+      url: "/api/v1/users/{user_id}/toggle-status",
       path: {
         user_id: data.userId,
       },

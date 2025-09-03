@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime
+from typing import Optional
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -43,17 +45,40 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = Field(default=None)
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
+    created_at: datetime
+    last_login: Optional[datetime] = None
 
 
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
+
+# Bulk operations
+class BulkUserUpdate(SQLModel):
+    user_ids: list[uuid.UUID]
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
+
+
+class BulkUserDelete(SQLModel):
+    user_ids: list[uuid.UUID]
+
+
+class UserStats(SQLModel):
+    total_users: int
+    active_users: int
+    superusers: int
+    inactive_users: int
+    users_created_this_month: int
 
 
 # Shared properties
